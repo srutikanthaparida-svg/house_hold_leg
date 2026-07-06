@@ -1,16 +1,35 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../services/supabase";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    console.log({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -24,6 +43,12 @@ export default function Login() {
           Manage your household finances
         </p>
 
+        {error && (
+          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleLogin} className="mt-8 space-y-5">
           <div>
             <label className="font-medium">Email</label>
@@ -34,6 +59,8 @@ export default function Login() {
               className="w-full mt-2 p-3 border rounded-lg"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              required
             />
           </div>
 
@@ -46,11 +73,16 @@ export default function Login() {
               className="w-full mt-2 p-3 border rounded-lg"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
             />
           </div>
 
-          <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg">
-            Sign In
+          <button
+            disabled={loading}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg disabled:opacity-50"
+          >
+            {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
       </div>
