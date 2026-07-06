@@ -1,10 +1,24 @@
+import { useState } from "react"
+import { Fab } from "@mui/material"
+import AddIcon from "@mui/icons-material/Add"
 import DashboardHeader from "../../components/dashboard/DashboardHeader"
 import SummaryCard from "../../components/dashboard/SummaryCard"
 import QuickActions from "../../components/dashboard/QuickActions"
 import RecentTransactions from "../../components/dashboard/RecentTransactions"
 import ExpenseChart from "../../components/dashboard/ExpenseChart"
+import AddTransactionDialog from "../../components/forms/AddTransactionDialog"
 
 function Dashboard() {
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  const handleAddTransaction = async (data) => {
+    try {
+      setDialogOpen(false)
+    } catch (error) {
+      console.error("Error adding transaction:", error)
+    }
+  }
+
   return (
     <div>
       <DashboardHeader />
@@ -21,6 +35,25 @@ function Dashboard() {
         <RecentTransactions />
         <ExpenseChart />
       </div>
+
+      <Fab
+        color="primary"
+        aria-label="add"
+        sx={{
+          position: "fixed",
+          bottom: 30,
+          right: 30,
+        }}
+        onClick={() => setDialogOpen(true)}
+      >
+        <AddIcon />
+      </Fab>
+
+      <AddTransactionDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onSubmit={handleAddTransaction}
+      />
     </div>
   )
 }
