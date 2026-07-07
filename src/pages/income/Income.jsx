@@ -57,8 +57,8 @@ function Income() {
       <p className="text-gray-500 mb-6">All income sources and entries.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <SummaryCard label="Total Income" value={`$${totalIncome.toFixed(2)}`} color="green" />
-        <SummaryCard label="Average per Entry" value={`$${avgPerEntry.toFixed(2)}`} color="blue" />
+        <SummaryCard label="Total Income" value={`₹${totalIncome.toFixed(2)}`} color="green" />
+        <SummaryCard label="Average per Entry" value={`₹${avgPerEntry.toFixed(2)}`} color="blue" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
