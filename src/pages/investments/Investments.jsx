@@ -59,11 +59,11 @@ function Investments() {
       <p className="text-gray-500 mb-6">Your holdings, allocation, and growth.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <SummaryCard label="Total Invested" value={`$${totalInvested.toFixed(2)}`} color="blue" />
-        <SummaryCard label="Current Value" value={`$${totalCurrentValue.toFixed(2)}`} color="blue" />
+        <SummaryCard label="Total Invested" value={`₹${totalInvested.toFixed(2)}`} color="blue" />
+        <SummaryCard label="Current Value" value={`₹${totalCurrentValue.toFixed(2)}`} color="blue" />
         <SummaryCard
           label="Growth"
-          value={`${growth >= 0 ? "+" : ""}$${growth.toFixed(2)} (${growthPct}%)`}
+          value={`${growth >= 0 ? "+" : ""}₹${growth.toFixed(2)} (${growthPct}%)`}
           color={growth >= 0 ? "green" : "red"}
         />
       </div>
@@ -84,16 +84,16 @@ function Investments() {
                     <div>
                       <p className="font-medium text-gray-900">{t.category}</p>
                       <p className="text-sm text-gray-500">
-                        {t.account} - invested ${Number(t.amount).toFixed(2)}
+                        {t.account} · invested ₹{Number(t.amount).toFixed(2)}
                       </p>
                       {t.description && <p className="text-xs text-gray-400">{t.description}</p>}
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-gray-900">
-                        ${Number(t.current_value ?? t.amount).toFixed(2)}
+                        ₹{Number(t.current_value ?? t.amount).toFixed(2)}
                       </p>
                       <p className={`text-sm font-medium ${g >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {g >= 0 ? "+" : ""}${g.toFixed(2)}
+                        {g >= 0 ? "+" : ""}₹{g.toFixed(2)}
                       </p>
                     </div>
                   </div>
