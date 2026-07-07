@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -15,17 +15,27 @@ import {
 } from "@mui/material";
 import { supabase } from "../../services/supabase";
 
-export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
-  const [formData, setFormData] = useState({
-    type: "expense",
-    category: "",
-    account: "",
-    amount: "",
-    description: "",
-    transaction_date: new Date().toISOString().split("T")[0],
-  });
+const emptyForm = (defaultType) => ({
+  type: defaultType || "expense",
+  category: "",
+  account: "",
+  amount: "",
+  current_value: "",
+  description: "",
+  transaction_date: new Date().toISOString().split("T")[0],
+});
+
+export default function AddTransactionDialog({ isOpen, onClose, onSubmit, defaultType }) {
+  const [formData, setFormData] = useState(emptyForm(defaultType));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(emptyForm(defaultType));
+      setError("");
+    }
+  }, [isOpen, defaultType]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,36 +51,35 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
     setLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.user?.id) {
         throw new Error("User not authenticated");
       }
 
-      const { error: insertError } = await supabase
-        .from("transactions")
-        .insert([
-          {
-            user_id: session.user.id,
-            type: formData.type,
-            category: formData.category,
-            account: formData.account,
-            amount: parseFloat(formData.amount),
-            description: formData.description,
-            transaction_date: formData.transaction_date,
-          },
-        ]);
+      const payload = {
+        user_id: session.user.id,
+        type: formData.type,
+        category: formData.category,
+        account: formData.account,
+        amount: parseFloat(formData.amount),
+        description: formData.description,
+        transaction_date: formData.transaction_date,
+        current_value:
+          formData.type === "investment" && formData.current_value !== ""
+            ? parseFloat(formData.current_value)
+            : formData.type === "investment"
+            ? parseFloat(formData.amount)
+            : null,
+      };
+
+      const { error: insertError } = await supabase.from("transactions").insert([payload]);
 
       if (insertError) throw insertError;
 
       onSubmit(formData);
-      setFormData({
-        type: "expense",
-        category: "",
-        account: "",
-        amount: "",
-        description: "",
-        transaction_date: new Date().toISOString().split("T")[0],
-      });
+      setFormData(emptyForm(defaultType));
       onClose();
     } catch (err) {
       setError(err.message || "Failed to add transaction");
@@ -94,14 +103,10 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
 
         <FormControl fullWidth disabled={loading}>
           <InputLabel>Type</InputLabel>
-          <Select
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            label="Type"
-          >
+          <Select name="type" value={formData.type} onChange={handleChange} label="Type">
             <MenuItem value="income">Income</MenuItem>
             <MenuItem value="expense">Expense</MenuItem>
+            <MenuItem value="investment">Investment</MenuItem>
           </Select>
         </FormControl>
 
@@ -111,7 +116,9 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
           name="category"
           value={formData.category}
           onChange={handleChange}
-          placeholder="e.g., Groceries, Salary"
+          placeholder={
+            formData.type === "investment" ? "e.g., Mutual Funds, Stocks" : "e.g., Groceries, Salary"
+          }
           disabled={loading}
           required
         />
@@ -129,7 +136,7 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
 
         <TextField
           fullWidth
-          label="Amount"
+          label={formData.type === "investment" ? "Amount invested" : "Amount"}
           name="amount"
           type="number"
           value={formData.amount}
@@ -139,6 +146,20 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
           disabled={loading}
           required
         />
+
+        {formData.type === "investment" && (
+          <TextField
+            fullWidth
+            label="Current value (optional)"
+            name="current_value"
+            type="number"
+            value={formData.current_value}
+            onChange={handleChange}
+            placeholder="Defaults to amount invested"
+            inputProps={{ step: "0.01" }}
+            disabled={loading}
+          />
+        )}
 
         <TextField
           fullWidth
@@ -181,4 +202,3 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit }) {
     </Dialog>
   );
 }
-

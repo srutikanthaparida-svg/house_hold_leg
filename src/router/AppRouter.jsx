@@ -2,6 +2,10 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from '../pages/auth/Login'
 import Register from '../pages/auth/Register'
 import Dashboard from '../pages/dashboard/Dashboard'
+import Income from '../pages/income/Income'
+import Expenses from '../pages/expenses/Expenses'
+import Investments from '../pages/investments/Investments'
+import MainLayout from '../components/layout/MainLayout'
 
 export default function AppRouter() {
   return (
@@ -9,7 +13,13 @@ export default function AppRouter() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route element={<MainLayout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/income" element={<Income />} />
+          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/investments" element={<Investments />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   )
