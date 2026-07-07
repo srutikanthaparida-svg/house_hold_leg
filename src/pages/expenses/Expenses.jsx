@@ -61,10 +61,10 @@ function Expenses() {
       <p className="text-gray-500 mb-6">All expenses and spending categories.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <SummaryCard label="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} color="red" />
+        <SummaryCard label="Total Expenses" value={`₹${totalExpenses.toFixed(2)}`} color="red" />
         <SummaryCard
           label="Biggest Category"
-          value={topCategoryEntry ? `${topCategoryEntry[0]} - $${topCategoryEntry[1].toFixed(2)}` : "-"}
+          value={topCategoryEntry ? `${topCategoryEntry[0]} · ₹${topCategoryEntry[1].toFixed(2)}` : "—"}
           color="blue"
         />
       </div>
