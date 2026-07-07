@@ -104,3 +104,10 @@ function Dashboard() {
       <AddTransactionDialog
         isOpen={dialogOpen}
         onClose={() => setDialogOpen(false)}
+        onSubmit={handleAddTransaction}
+      />
+    </div>
+  )
+}
+
+export default Dashboard
