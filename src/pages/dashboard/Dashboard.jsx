@@ -75,10 +75,10 @@ function Dashboard() {
       <p className="text-gray-500 mb-6">Welcome back! Here's your financial overview.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <SummaryCard label="Total Income" value={`$${totalIncome.toFixed(2)}`} color="green" />
-        <SummaryCard label="Total Expenses" value={`$${totalExpenses.toFixed(2)}`} color="red" />
-        <SummaryCard label="Total Invested" value={`$${totalInvested.toFixed(2)}`} color="blue" />
-        <SummaryCard label="Net Balance" value={`$${(totalIncome - totalExpenses).toFixed(2)}`} color="blue" />
+        <SummaryCard label="Total Income" value={`₹${totalIncome.toFixed(2)}`} color="green" />
+        <SummaryCard label="Total Expenses" value={`₹${totalExpenses.toFixed(2)}`} color="red" />
+        <SummaryCard label="Total Invested" value={`₹${totalInvested.toFixed(2)}`} color="blue" />
+        <SummaryCard label="Net Balance" value={`₹${(totalIncome - totalExpenses).toFixed(2)}`} color="blue" />
       </div>
 
       <QuickActions />
@@ -104,10 +104,3 @@ function Dashboard() {
       <AddTransactionDialog
         isOpen={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        onSubmit={handleAddTransaction}
-      />
-    </div>
-  )
-}
-
-export default Dashboard
