@@ -5,6 +5,7 @@ import Dashboard from '../pages/dashboard/Dashboard'
 import Income from '../pages/income/Income'
 import Expenses from '../pages/expenses/Expenses'
 import Investments from '../pages/investments/Investments'
+import Loans from '../pages/loans/Loans'
 import MainLayout from '../components/layout/MainLayout'
 
 export default function AppRouter() {
@@ -19,6 +20,7 @@ export default function AppRouter() {
           <Route path="/income" element={<Income />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/investments" element={<Investments />} />
+          <Route path="/loans" element={<Loans />} />
         </Route>
       </Routes>
     </BrowserRouter>

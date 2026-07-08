@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom"
-import { LayoutDashboard, TrendingUp, TrendingDown, PiggyBank } from "lucide-react"
+import { LayoutDashboard, TrendingUp, TrendingDown, PiggyBank, Landmark } from "lucide-react"
 import { supabase } from "../../services/supabase"
 import { useAuth } from "../../context/AuthContext"
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/income", label: "Income", icon: TrendingUp },
   { to: "/expenses", label: "Expenses", icon: TrendingDown },
   { to: "/investments", label: "Investments", icon: PiggyBank },
+  { to: "/loans", label: "Loans", icon: Landmark },
 ]
 
 export default function AppNavBar() {
@@ -31,7 +32,7 @@ export default function AppNavBar() {
           </div>
           <div>
             <div className="font-bold text-base leading-tight">Household Ledger</div>
-            <div className="text-xs text-blue-200">Income - Expenses - Investments</div>
+            <div className="text-xs text-blue-200">Income - Expenses - Investments - Loans</div>
           </div>
         </div>
 
