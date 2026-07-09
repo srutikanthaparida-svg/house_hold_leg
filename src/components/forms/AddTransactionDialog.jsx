@@ -25,17 +25,28 @@ const emptyForm = (defaultType) => ({
   transaction_date: new Date().toISOString().split("T")[0],
 });
 
-export default function AddTransactionDialog({ isOpen, onClose, onSubmit, defaultType }) {
+const formFromTransaction = (t) => ({
+  type: t.type,
+  category: t.category || "",
+  account: t.account || "",
+  amount: t.amount ?? "",
+  current_value: t.current_value ?? "",
+  description: t.description || "",
+  transaction_date: t.transaction_date || new Date().toISOString().split("T")[0],
+});
+
+export default function AddTransactionDialog({ isOpen, onClose, onSubmit, defaultType, editTransaction }) {
+  const isEditing = !!editTransaction
   const [formData, setFormData] = useState(emptyForm(defaultType));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(emptyForm(defaultType));
+      setFormData(isEditing ? formFromTransaction(editTransaction) : emptyForm(defaultType));
       setError("");
     }
-  }, [isOpen, defaultType]);
+  }, [isOpen, defaultType, editTransaction]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,35 +69,51 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit, defaul
         throw new Error("User not authenticated");
       }
 
-      const payload = {
-        user_id: session.user.id,
-        type: formData.type,
-        category: formData.category,
-        account: formData.account,
-        amount: parseFloat(formData.amount),
-        description: formData.description,
-        transaction_date: formData.transaction_date,
-        current_value:
-          formData.type === "investment" && formData.current_value !== ""
-            ? parseFloat(formData.current_value)
-            : formData.type === "investment"
-            ? parseFloat(formData.amount)
-            : null,
-      };
+      const currentValue =
+        formData.type === "investment" && formData.current_value !== ""
+          ? parseFloat(formData.current_value)
+          : formData.type === "investment"
+          ? parseFloat(formData.amount)
+          : null;
 
-      const { error: insertError } = await supabase.from("transactions").insert([payload]);
-
-      if (insertError) throw insertError;
+      if (isEditing) {
+        const { error: updateError } = await supabase
+          .from("transactions")
+          .update({
+            type: formData.type,
+            category: formData.category,
+            account: formData.account,
+            amount: parseFloat(formData.amount),
+            description: formData.description,
+            transaction_date: formData.transaction_date,
+            current_value: currentValue,
+          })
+          .eq("id", editTransaction.id);
+        if (updateError) throw updateError;
+      } else {
+        const payload = {
+          user_id: session.user.id,
+          type: formData.type,
+          category: formData.category,
+          account: formData.account,
+          amount: parseFloat(formData.amount),
+          description: formData.description,
+          transaction_date: formData.transaction_date,
+          current_value: currentValue,
+        };
+        const { error: insertError } = await supabase.from("transactions").insert([payload]);
+        if (insertError) throw insertError;
+      }
 
       onSubmit(formData);
       setFormData(emptyForm(defaultType));
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to add transaction");
+      setError(err.message || "Failed to save transaction");
     } finally {
       setLoading(false);
     }
-  };
+    };
 
   const handleClose = () => {
     if (!loading) {
@@ -97,7 +124,7 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit, defaul
 
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Transaction</DialogTitle>
+      <DialogTitle>{isEditing ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
 
@@ -196,7 +223,7 @@ export default function AddTransactionDialog({ isOpen, onClose, onSubmit, defaul
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : undefined}
         >
-          {loading ? "Adding..." : "Add Transaction"}
+          {loading ? "Saving..." : isEditing ? "Save Changes" : "Add Transaction"}
         </Button>
       </DialogActions>
     </Dialog>

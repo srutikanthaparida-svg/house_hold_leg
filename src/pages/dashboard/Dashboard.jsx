@@ -15,14 +15,12 @@ function formatINR(n) {
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-function lastNMonths(n) {
-  const out = []
-  const now = new Date()
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    out.push({ year: d.getFullYear(), month: d.getMonth(), label: MONTH_LABELS[d.getMonth()] })
-  }
-  return out
+function monthsAgoDate(base, n) {
+  return new Date(base.getFullYear(), base.getMonth() - n, 1)
+}
+
+function endOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59)
 }
 
 function groupByCategory(txs) {
@@ -39,6 +37,7 @@ function Dashboard() {
   const [transactions, setTransactions] = useState([])
   const [loans, setLoans] = useState([])
   const [loading, setLoading] = useState(true)
+  const [monthsAgo, setMonthsAgo] = useState(0)
 
   useEffect(() => {
     fetchAll()
@@ -69,7 +68,23 @@ function Dashboard() {
     }
   }
 
-  const months = useMemo(() => lastNMonths(6), [])
+  const now = new Date()
+  const selectedDate = monthsAgoDate(now, monthsAgo)
+  const selectedCutoff = endOfMonth(selectedDate)
+
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const d = monthsAgoDate(now, i)
+    return { value: i, label: `${MONTH_LABELS[d.getMonth()]} ${d.getFullYear()}` }
+  })
+
+  const months = useMemo(() => {
+    const out = []
+    for (let i = 5; i >= 0; i--) {
+      const d = monthsAgoDate(selectedDate, i)
+      out.push({ year: d.getFullYear(), month: d.getMonth(), label: MONTH_LABELS[d.getMonth()] })
+    }
+    return out
+  }, [monthsAgo])
 
   const monthlyTrend = useMemo(() => {
     return months.map(({ year, month, label }) => {
@@ -82,28 +97,35 @@ function Dashboard() {
       return { month: label, income, expenses }
     })
   }, [transactions, months])
-
   const thisMonth = monthlyTrend[monthlyTrend.length - 1] || { income: 0, expenses: 0 }
   const lastMonth = monthlyTrend[monthlyTrend.length - 2] || { income: 0, expenses: 0 }
   const pctChange = (curr, prev) => (prev > 0 ? ((curr - prev) / prev) * 100 : 0)
 
-  const totalIncome = transactions.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0)
-  const totalExpenses = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0)
-  const investmentTx = transactions.filter((t) => t.type === "investment")
-  const totalInvested = investmentTx.reduce((s, t) => s + Number(t.amount), 0)
-  const totalInvestmentValue = investmentTx.reduce((s, t) => s + Number(t.current_value ?? t.amount), 0)
+  const selectedMonthTx = transactions.filter((t) => {
+    const d = new Date(t.transaction_date)
+    return d.getFullYear() === selectedDate.getFullYear() && d.getMonth() === selectedDate.getMonth()
+  })
+  const totalIncome = selectedMonthTx.filter((t) => t.type === "income").reduce((s, t) => s + Number(t.amount), 0)
+  const totalExpenses = selectedMonthTx.filter((t) => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0)
+
+  const investmentTxCumulative = transactions.filter(
+    (t) => t.type === "investment" && new Date(t.transaction_date) <= selectedCutoff
+  )
+  const totalInvested = investmentTxCumulative.reduce((s, t) => s + Number(t.amount), 0)
+  const totalInvestmentValue = investmentTxCumulative.reduce((s, t) => s + Number(t.current_value ?? t.amount), 0)
   const investmentGrowthPct = totalInvested > 0 ? ((totalInvestmentValue - totalInvested) / totalInvested) * 100 : 0
 
   const enrichedLoans = useMemo(() => {
     return loans.map((loan) => {
       const scheduledEMI = calculateEMI(Number(loan.principal_amount), Number(loan.interest_rate), loan.tenure_months)
-      const paid = monthsElapsed(loan.start_date, loan.tenure_months)
-      const remaining = loan.tenure_months - paid
+      const paidNow = monthsElapsed(loan.start_date, loan.tenure_months)
+      const paidAsOf = Math.max(0, paidNow - monthsAgo)
+      const remaining = loan.tenure_months - paidAsOf
       const standardOutstanding = calculateOutstanding(
         Number(loan.principal_amount),
         Number(loan.interest_rate),
         loan.tenure_months,
-        paid
+        paidAsOf
       )
       const actualPayment = loan.actual_emi_amount ? Number(loan.actual_emi_amount) : scheduledEMI
       const hasCustomPayment = !!loan.actual_emi_amount && Math.abs(actualPayment - scheduledEMI) > 0.01
@@ -111,12 +133,23 @@ function Dashboard() {
         Number(loan.principal_amount),
         Number(loan.interest_rate),
         actualPayment,
-        paid
+        paidAsOf
       )
       const balanceImpact = standardOutstanding - actualOutstanding
-      return { ...loan, emi: scheduledEMI, paid, remaining, standardOutstanding, outstanding: actualOutstanding, actualPayment, hasCustomPayment, balanceImpact }
+      return {
+        ...loan,
+        emi: scheduledEMI,
+        paid: paidAsOf,
+        paidNow,
+        remaining,
+        standardOutstanding,
+        outstanding: actualOutstanding,
+        actualPayment,
+        hasCustomPayment,
+        balanceImpact,
+      }
     })
-  }, [loans])
+  }, [loans, monthsAgo])
 
   const totalOutstandingStandard = enrichedLoans.reduce((s, l) => s + l.standardOutstanding, 0)
   const adjustedOutstanding = enrichedLoans.reduce((s, l) => s + l.outstanding, 0)
@@ -125,19 +158,20 @@ function Dashboard() {
 
   const loanTrend = useMemo(() => {
     return months.map(({ label }, idx) => {
-      const monthsAgo = months.length - 1 - idx
+      const monthsAgoFromNow = monthsAgo + (months.length - 1 - idx)
       const total = enrichedLoans.reduce((sum, loan) => {
-        const paidAtThatPoint = Math.max(0, loan.paid - monthsAgo)
+        const paidAtThatPoint = Math.max(0, loan.paidNow - monthsAgoFromNow)
         const val = calculateOutstanding(Number(loan.principal_amount), Number(loan.interest_rate), loan.tenure_months, paidAtThatPoint)
         return sum + val
       }, 0)
       return { month: label, outstanding: Math.round(total) }
     })
-  }, [months, enrichedLoans])
-  const expenseCategories = groupByCategory(transactions.filter((t) => t.type === "expense"))
-  const incomeCategories = groupByCategory(transactions.filter((t) => t.type === "income"))
+  }, [months, enrichedLoans, monthsAgo])
+
+  const expenseCategories = groupByCategory(selectedMonthTx.filter((t) => t.type === "expense"))
+  const incomeCategories = groupByCategory(selectedMonthTx.filter((t) => t.type === "income"))
   const investmentCategories = groupByCategory(
-    investmentTx.map((t) => ({ ...t, amount: Number(t.current_value ?? t.amount) }))
+    investmentTxCumulative.map((t) => ({ ...t, amount: Number(t.current_value ?? t.amount) }))
   )
 
   const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0
@@ -151,8 +185,18 @@ function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 text-sm">Welcome back! Here's your financial overview.</p>
         </div>
+        <select
+          value={monthsAgo}
+          onChange={(e) => setMonthsAgo(Number(e.target.value))}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
+        >
+          {monthOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard
           label="Total Income"

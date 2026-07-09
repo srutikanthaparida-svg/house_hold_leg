@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -21,10 +21,28 @@ const emptyForm = () => ({
   actual_emi_amount: "",
 });
 
-export default function AddLoanDialog({ isOpen, onClose, onSubmit }) {
+const formFromLoan = (loan) => ({
+  lender: loan.lender || "",
+  principal_amount: loan.principal_amount ?? "",
+  interest_rate: loan.interest_rate ?? "",
+  tenure_years: loan.tenure_months ? (loan.tenure_months / 12).toString() : "",
+  start_date: loan.start_date || new Date().toISOString().split("T")[0],
+  account: loan.account || "",
+  actual_emi_amount: loan.actual_emi_amount ?? "",
+});
+
+export default function AddLoanDialog({ isOpen, onClose, onSubmit, editLoan }) {
+  const isEditing = !!editLoan
   const [formData, setFormData] = useState(emptyForm());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(isEditing ? formFromLoan(editLoan) : emptyForm());
+      setError("");
+    }
+  }, [isOpen, editLoan]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,8 +64,7 @@ export default function AddLoanDialog({ isOpen, onClose, onSubmit }) {
 
       const tenureMonths = Math.round(parseFloat(formData.tenure_years) * 12);
 
-      const payload = {
-        user_id: session.user.id,
+      const basePayload = {
         lender: formData.lender,
         principal_amount: parseFloat(formData.principal_amount),
         interest_rate: parseFloat(formData.interest_rate),
@@ -57,15 +74,21 @@ export default function AddLoanDialog({ isOpen, onClose, onSubmit }) {
         actual_emi_amount: formData.actual_emi_amount ? parseFloat(formData.actual_emi_amount) : null,
       };
 
-      const { error: insertError } = await supabase.from("loans").insert([payload]);
-
-      if (insertError) throw insertError;
+      if (isEditing) {
+        const { error: updateError } = await supabase.from("loans").update(basePayload).eq("id", editLoan.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from("loans")
+          .insert([{ ...basePayload, user_id: session.user.id }]);
+        if (insertError) throw insertError;
+      }
 
       onSubmit(formData);
       setFormData(emptyForm());
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to add loan");
+      setError(err.message || "Failed to save loan");
     } finally {
       setLoading(false);
     }
@@ -80,7 +103,7 @@ export default function AddLoanDialog({ isOpen, onClose, onSubmit }) {
 
   return (
     <Dialog open={isOpen} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Add Loan</DialogTitle>
+      <DialogTitle>{isEditing ? "Edit Loan" : "Add Loan"}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
         {error && <Alert severity="error">{error}</Alert>}
 
@@ -180,7 +203,7 @@ export default function AddLoanDialog({ isOpen, onClose, onSubmit }) {
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : undefined}
         >
-          {loading ? "Adding..." : "Add Loan"}
+          {loading ? "Saving..." : isEditing ? "Save Changes" : "Add Loan"}
         </Button>
       </DialogActions>
     </Dialog>

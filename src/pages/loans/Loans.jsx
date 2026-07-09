@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo } from "react"
-import { Fab } from "@mui/material"
-import AddIcon from "@mui/icons-material/Add"
-import { Trash2 } from "lucide-react"
+import { Pencil, Trash2, PlusCircle } from "lucide-react"
 import { supabase } from "../../services/supabase"
 import SummaryCard from "../../components/dashboard/SummaryCard"
 import AddLoanDialog from "../../components/forms/AddLoanDialog"
@@ -16,6 +14,7 @@ function Loans() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [loans, setLoans] = useState([])
   const [loading, setLoading] = useState(true)
+  const [editingLoan, setEditingLoan] = useState(null)
 
   useEffect(() => {
     fetchLoans()
@@ -46,9 +45,20 @@ function Loans() {
     }
   }
 
-  const handleAddLoan = async () => {
+  const handleSaved = async () => {
     setDialogOpen(false)
+    setEditingLoan(null)
     await fetchLoans()
+  }
+
+  const handleEdit = (loan) => {
+    setEditingLoan(loan)
+    setDialogOpen(true)
+  }
+
+  const handleAddNew = () => {
+    setEditingLoan(null)
+    setDialogOpen(true)
   }
 
   const deleteLoan = async (id) => {
@@ -63,7 +73,7 @@ function Loans() {
 
   const enrichedLoans = useMemo(() => {
     return loans.map((loan) => {
-      const scheduledEMI = calculateEMI(Number(loan.principal_amount), Number(loan.interest_rate), loan.tenure_months)
+      const emi = calculateEMI(Number(loan.principal_amount), Number(loan.interest_rate), loan.tenure_months)
       const paid = monthsElapsed(loan.start_date, loan.tenure_months)
       const remaining = loan.tenure_months - paid
       const standardOutstanding = calculateOutstanding(
@@ -72,9 +82,8 @@ function Loans() {
         loan.tenure_months,
         paid
       )
-
-      const actualPayment = loan.actual_emi_amount ? Number(loan.actual_emi_amount) : scheduledEMI
-      const hasCustomPayment = !!loan.actual_emi_amount && Math.abs(actualPayment - scheduledEMI) > 0.01
+      const actualPayment = loan.actual_emi_amount ? Number(loan.actual_emi_amount) : emi
+      const hasCustomPayment = !!loan.actual_emi_amount && Math.abs(actualPayment - emi) > 0.01
       const actualOutstanding = simulateActualOutstanding(
         Number(loan.principal_amount),
         Number(loan.interest_rate),
@@ -83,23 +92,10 @@ function Loans() {
       )
       const monthsSavedOrLost =
         remainingMonthsAtPayment(actualOutstanding, Number(loan.interest_rate), actualPayment) !== null
-          ? remaining -
-            remainingMonthsAtPayment(actualOutstanding, Number(loan.interest_rate), actualPayment)
+          ? remaining - remainingMonthsAtPayment(actualOutstanding, Number(loan.interest_rate), actualPayment)
           : null
-      const balanceImpact = standardOutstanding - actualOutstanding // positive = ahead of schedule
-
-      return {
-        ...loan,
-        emi: scheduledEMI,
-        paid,
-        remaining,
-        outstanding: actualOutstanding,
-        standardOutstanding,
-        actualPayment,
-        hasCustomPayment,
-        balanceImpact,
-        monthsSavedOrLost,
-      }
+      const balanceImpact = standardOutstanding - actualOutstanding
+      return { ...loan, emi, paid, remaining, outstanding: actualOutstanding, standardOutstanding, actualPayment, hasCustomPayment, balanceImpact, monthsSavedOrLost }
     })
   }, [loans])
 
@@ -109,9 +105,19 @@ function Loans() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Loans</h1>
-      <p className="text-gray-500 mb-6">Track loan EMIs and outstanding balances.</p>
-
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Loans</h1>
+          <p className="text-gray-500">Track loan EMIs and outstanding balances.</p>
+        </div>
+        <button
+          onClick={handleAddNew}
+          className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+        >
+          <PlusCircle size={16} />
+          Add Loan
+        </button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <SummaryCard label="Total Outstanding" value={formatINR(totalOutstanding)} color="red" />
         <SummaryCard label="Total Actual Monthly Payment" value={formatINR(totalMonthlyEMI)} color="blue" />
@@ -139,9 +145,14 @@ function Loans() {
                         {loan.account && <p className="text-xs text-gray-400">{loan.account}</p>}
                       </div>
                     </div>
-                    <button onClick={() => deleteLoan(loan.id)} className="text-gray-300 hover:text-red-500 transition">
-                      <Trash2 size={16} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => handleEdit(loan)} className="text-gray-300 hover:text-blue-500 transition">
+                        <Pencil size={16} />
+                      </button>
+                      <button onClick={() => deleteLoan(loan.id)} className="text-gray-300 hover:text-red-500 transition">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3 text-sm">
@@ -213,16 +224,15 @@ function Loans() {
         )}
       </div>
 
-      <Fab
-        color="primary"
-        aria-label="add"
-        sx={{ position: "fixed", bottom: 30, right: 30 }}
-        onClick={() => setDialogOpen(true)}
-      >
-        <AddIcon />
-      </Fab>
-
-      <AddLoanDialog isOpen={dialogOpen} onClose={() => setDialogOpen(false)} onSubmit={handleAddLoan} />
+      <AddLoanDialog
+        isOpen={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false)
+          setEditingLoan(null)
+        }}
+        onSubmit={handleSaved}
+        editLoan={editingLoan}
+      />
     </div>
   )
 }
