@@ -4,6 +4,7 @@ import { PiggyBank, TrendingUp, PlusCircle, Pencil, Trash2 } from "lucide-react"
 import { supabase } from "../../services/supabase"
 import SummaryCard from "../../components/dashboard/SummaryCard"
 import AddTransactionDialog from "../../components/forms/AddTransactionDialog"
+import ExcelImportExport from "../../components/dashboard/ExcelImportExport"
 
 const COLORS = ["#0f2a4a", "#2563eb", "#0891b2", "#7c3aed", "#059669", "#ea580c", "#64748b"]
 
@@ -91,18 +92,21 @@ function Investments() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold mb-1">Investments</h1>
           <p className="text-gray-500">Your holdings, allocation, and growth.</p>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-        >
-          <PlusCircle size={16} />
-          Add Investment
-        </button>
+        <div className="flex items-center gap-2">
+          <ExcelImportExport type="investment" transactions={transactions} onImported={fetchInvestments} />
+          <button
+            onClick={handleAddNew}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          >
+            <PlusCircle size={16} />
+            Add Investment
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

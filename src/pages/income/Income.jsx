@@ -5,6 +5,7 @@ import { supabase } from "../../services/supabase"
 import SummaryCard from "../../components/dashboard/SummaryCard"
 import EditableTransactionList from "../../components/dashboard/EditableTransactionList"
 import AddTransactionDialog from "../../components/forms/AddTransactionDialog"
+import ExcelImportExport from "../../components/dashboard/ExcelImportExport"
 
 const COLORS = ["#0f2a4a", "#2563eb", "#0891b2", "#7c3aed", "#059669", "#64748b"]
 
@@ -87,18 +88,21 @@ function Income() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold mb-1">Income</h1>
           <p className="text-gray-500">All income sources and entries.</p>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition"
-        >
-          <PlusCircle size={16} />
-          Add Income
-        </button>
+        <div className="flex items-center gap-2">
+          <ExcelImportExport type="income" transactions={transactions} onImported={fetchIncome} />
+          <button
+            onClick={handleAddNew}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition"
+          >
+            <PlusCircle size={16} />
+            Add Income
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">

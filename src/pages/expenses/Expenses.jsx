@@ -5,6 +5,7 @@ import { supabase } from "../../services/supabase"
 import SummaryCard from "../../components/dashboard/SummaryCard"
 import EditableTransactionList from "../../components/dashboard/EditableTransactionList"
 import AddTransactionDialog from "../../components/forms/AddTransactionDialog"
+import ExcelImportExport from "../../components/dashboard/ExcelImportExport"
 
 const COLORS = {
   Rent: "#0f2a4a",
@@ -97,18 +98,21 @@ function Expenses() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold mb-1">Expenses</h1>
           <p className="text-gray-500">All expenses and spending categories.</p>
         </div>
-        <button
-          onClick={handleAddNew}
-          className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-rose-700 transition"
-        >
-          <PlusCircle size={16} />
-          Add Expense
-        </button>
+        <div className="flex items-center gap-2">
+          <ExcelImportExport type="expense" transactions={transactions} onImported={fetchExpenses} />
+          <button
+            onClick={handleAddNew}
+            className="flex items-center gap-2 bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-rose-700 transition"
+          >
+            <PlusCircle size={16} />
+            Add Expense
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
