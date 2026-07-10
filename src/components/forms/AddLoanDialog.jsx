@@ -19,6 +19,7 @@ const emptyForm = () => ({
   start_date: new Date().toISOString().split("T")[0],
   account: "",
   actual_emi_amount: "",
+  prepayment_amount: "",
 });
 
 const formFromLoan = (loan) => ({
@@ -29,6 +30,7 @@ const formFromLoan = (loan) => ({
   start_date: loan.start_date || new Date().toISOString().split("T")[0],
   account: loan.account || "",
   actual_emi_amount: loan.actual_emi_amount ?? "",
+  prepayment_amount: loan.prepayment_amount ?? "",
 });
 
 export default function AddLoanDialog({ isOpen, onClose, onSubmit, editLoan }) {
@@ -72,6 +74,7 @@ export default function AddLoanDialog({ isOpen, onClose, onSubmit, editLoan }) {
         start_date: formData.start_date,
         account: formData.account || null,
         actual_emi_amount: formData.actual_emi_amount ? parseFloat(formData.actual_emi_amount) : null,
+        prepayment_amount: formData.prepayment_amount ? parseFloat(formData.prepayment_amount) : 0,
       };
 
       if (isEditing) {
@@ -188,6 +191,19 @@ export default function AddLoanDialog({ isOpen, onClose, onSubmit, editLoan }) {
           onChange={handleChange}
           placeholder="Leave blank to use the calculated EMI"
           helperText="If you're paying more or less than the standard EMI, enter the real amount here to see its impact."
+          inputProps={{ step: "0.01" }}
+          disabled={loading}
+        />
+
+        <TextField
+          fullWidth
+          label="Total prepayment made (₹, optional)"
+          name="prepayment_amount"
+          type="number"
+          value={formData.prepayment_amount}
+          onChange={handleChange}
+          placeholder="Lump sum extra payments made so far"
+          helperText="A one-time or cumulative lump sum paid toward the principal, separate from your monthly EMI."
           inputProps={{ step: "0.01" }}
           disabled={loading}
         />

@@ -83,25 +83,30 @@ function Loans() {
         paid
       )
       const actualPayment = loan.actual_emi_amount ? Number(loan.actual_emi_amount) : emi
-      const hasCustomPayment = !!loan.actual_emi_amount && Math.abs(actualPayment - emi) > 0.01
-      const actualOutstanding = simulateActualOutstanding(
+      const prepayment = Number(loan.prepayment_amount || 0)
+      const hasCustomPayment = (!!loan.actual_emi_amount && Math.abs(actualPayment - emi) > 0.01) || prepayment > 0
+      const outstandingBeforePrepayment = simulateActualOutstanding(
         Number(loan.principal_amount),
         Number(loan.interest_rate),
         actualPayment,
         paid
       )
+      const actualOutstanding = Math.max(0, outstandingBeforePrepayment - prepayment)
       const monthsSavedOrLost =
         remainingMonthsAtPayment(actualOutstanding, Number(loan.interest_rate), actualPayment) !== null
           ? remaining - remainingMonthsAtPayment(actualOutstanding, Number(loan.interest_rate), actualPayment)
           : null
       const balanceImpact = standardOutstanding - actualOutstanding
-      return { ...loan, emi, paid, remaining, outstanding: actualOutstanding, standardOutstanding, actualPayment, hasCustomPayment, balanceImpact, monthsSavedOrLost }
+      const remainingAtActualPace = remainingMonthsAtPayment(actualOutstanding, Number(loan.interest_rate), actualPayment)
+      const effectiveRemaining = remainingAtActualPace !== null ? remainingAtActualPace : remaining
+      const effectiveTotalMonths = paid + effectiveRemaining
+      return { ...loan, emi, paid, remaining, effectiveRemaining, effectiveTotalMonths, outstanding: actualOutstanding, standardOutstanding, actualPayment, prepayment, hasCustomPayment, balanceImpact, monthsSavedOrLost }
     })
   }, [loans])
 
   const totalOutstanding = enrichedLoans.reduce((sum, l) => sum + l.outstanding, 0)
-  const totalMonthlyEMI = enrichedLoans.reduce((sum, l) => (l.remaining > 0 ? sum + l.actualPayment : sum), 0)
-  const activeLoansCount = enrichedLoans.filter((l) => l.remaining > 0).length
+  const totalMonthlyEMI = enrichedLoans.reduce((sum, l) => (l.effectiveRemaining > 0 ? sum + l.actualPayment : sum), 0)
+  const activeLoansCount = enrichedLoans.filter((l) => l.effectiveRemaining > 0).length
 
   return (
     <div>
@@ -118,6 +123,7 @@ function Loans() {
           Add Loan
         </button>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <SummaryCard label="Total Outstanding" value={formatINR(totalOutstanding)} color="red" />
         <SummaryCard label="Total Actual Monthly Payment" value={formatINR(totalMonthlyEMI)} color="blue" />
@@ -134,7 +140,7 @@ function Loans() {
         ) : (
           <div className="space-y-4">
             {enrichedLoans.map((loan) => {
-              const progressPct = Math.min((loan.paid / loan.tenure_months) * 100, 100)
+              const progressPct = Math.min((loan.paid / (loan.effectiveTotalMonths || loan.tenure_months)) * 100, 100)
               return (
                 <div key={loan.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -155,7 +161,7 @@ function Loans() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3 text-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-3 text-sm">
                     <div>
                       <p className="text-gray-400">Principal</p>
                       <p className="font-medium text-gray-900">{formatINR(loan.principal_amount)}</p>
@@ -165,8 +171,16 @@ function Loans() {
                       <p className="font-medium text-gray-900">{loan.interest_rate}% p.a.</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Scheduled EMI</p>
+                      <p className="text-gray-400">Scheduled EMI (as per bank)</p>
                       <p className="font-medium text-gray-900">{formatINR(loan.emi)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Actual EMI (what you pay)</p>
+                      <p className="font-medium text-gray-900">{formatINR(loan.actualPayment)}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Prepayment Made</p>
+                      <p className="font-medium text-gray-900">{formatINR(loan.prepayment)}</p>
                     </div>
                     <div>
                       <p className="text-gray-400">Outstanding</p>
@@ -176,12 +190,8 @@ function Loans() {
 
                   {loan.hasCustomPayment && (
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3 text-sm">
-                      <p className="font-medium text-blue-900 mb-2">Actual payment impact</p>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div>
-                          <p className="text-blue-700/70 text-xs">Actual monthly payment</p>
-                          <p className="font-medium text-blue-900">{formatINR(loan.actualPayment)}</p>
-                        </div>
+                      <p className="font-medium text-blue-900 mb-2">Impact of actual EMI + prepayment</p>
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <p className="text-blue-700/70 text-xs">
                             {loan.balanceImpact >= 0 ? "Ahead of schedule by" : "Behind schedule by"}
@@ -208,12 +218,12 @@ function Loans() {
 
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
                     <CalendarClock size={14} />
-                    {loan.paid} of {loan.tenure_months} EMIs paid
-                    {loan.remaining > 0 ? ` - ${loan.remaining} remaining` : " - Fully paid"}
+                    {loan.paid} of {loan.effectiveTotalMonths} EMIs paid
+                    {loan.effectiveRemaining > 0 ? ` - ${loan.effectiveRemaining} remaining` : " - Fully paid"}
                   </div>
                   <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${loan.remaining > 0 ? "bg-blue-500" : "bg-green-500"}`}
+                      className={`h-full rounded-full ${loan.effectiveRemaining > 0 ? "bg-blue-500" : "bg-green-500"}`}
                       style={{ width: `${progressPct}%` }}
                     />
                   </div>
