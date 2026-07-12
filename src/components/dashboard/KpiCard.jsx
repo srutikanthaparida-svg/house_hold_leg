@@ -6,6 +6,7 @@ const TONE_STYLES = {
   red: { bg: "bg-red-50", text: "text-red-600", line: "#dc2626" },
   blue: { bg: "bg-blue-50", text: "text-blue-600", line: "#2563eb" },
   purple: { bg: "bg-purple-50", text: "text-purple-600", line: "#7c3aed" },
+  amber: { bg: "bg-amber-50", text: "text-amber-600", line: "#d97706" },
 }
 
 export default function KpiCard({ label, value, icon: Icon, tone = "blue", trendPct, trendLabel, sparkline = [] }) {
