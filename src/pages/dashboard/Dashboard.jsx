@@ -5,6 +5,7 @@ import KpiCard from "../../components/dashboard/KpiCard"
 import DonutChart from "../../components/dashboard/DonutChart"
 import IncomeExpenseBarChart from "../../components/dashboard/IncomeExpenseBarChart"
 import LoanOverviewCard from "../../components/dashboard/LoanOverviewCard"
+import MonthComparisonCard from "../../components/dashboard/MonthComparisonCard"
 import { CategoryListCard, LoanDetailCard } from "../../components/dashboard/CategoryListCard"
 import RecentTransactions from "../../components/dashboard/RecentTransactions"
 import { calculateEMI, calculateOutstanding, monthsElapsed, simulateActualOutstanding } from "../../lib/loanMath"
@@ -97,6 +98,7 @@ function Dashboard() {
       return { month: label, income, expenses }
     })
   }, [transactions, months])
+
   const thisMonth = monthlyTrend[monthlyTrend.length - 1] || { income: 0, expenses: 0 }
   const lastMonth = monthlyTrend[monthlyTrend.length - 2] || { income: 0, expenses: 0 }
   const pctChange = (curr, prev) => (prev > 0 ? ((curr - prev) / prev) * 100 : 0)
@@ -197,6 +199,7 @@ function Dashboard() {
           ))}
         </select>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard
           label="Total Income"
@@ -237,6 +240,10 @@ function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <IncomeExpenseBarChart data={monthlyTrend} />
         <DonutChart title="Expense Breakdown" data={expenseCategories} centerLabel="Total" />
+      </div>
+
+      <div className="mb-6">
+        <MonthComparisonCard monthlyTrend={monthlyTrend} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
