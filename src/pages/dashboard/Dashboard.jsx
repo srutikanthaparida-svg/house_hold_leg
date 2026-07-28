@@ -6,6 +6,7 @@ import DonutChart from "../../components/dashboard/DonutChart"
 import IncomeExpenseBarChart from "../../components/dashboard/IncomeExpenseBarChart"
 import LoanOverviewCard from "../../components/dashboard/LoanOverviewCard"
 import MonthComparisonCard from "../../components/dashboard/MonthComparisonCard"
+import DashboardImportExport from "../../components/dashboard/DashboardImportExport"
 import { CategoryListCard, LoanDetailCard } from "../../components/dashboard/CategoryListCard"
 import RecentTransactions from "../../components/dashboard/RecentTransactions"
 import { calculateEMI, calculateOutstanding, monthsElapsed, simulateActualOutstanding } from "../../lib/loanMath"
@@ -187,17 +188,20 @@ function Dashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 text-sm">Welcome back! Here's your financial overview.</p>
         </div>
-        <select
-          value={monthsAgo}
-          onChange={(e) => setMonthsAgo(Number(e.target.value))}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
-        >
-          {monthOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 flex-wrap">
+          <DashboardImportExport transactions={transactions} loans={loans} onImported={fetchAll} />
+          <select
+            value={monthsAgo}
+            onChange={(e) => setMonthsAgo(Number(e.target.value))}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
+          >
+            {monthOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
