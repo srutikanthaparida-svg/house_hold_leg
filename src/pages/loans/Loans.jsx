@@ -6,6 +6,7 @@ import DonutChart from "../../components/dashboard/DonutChart"
 import LoanOverviewCard from "../../components/dashboard/LoanOverviewCard"
 import AddLoanDialog from "../../components/forms/AddLoanDialog"
 import { calculateEMI, calculateOutstanding, monthsElapsed, simulateActualOutstanding, remainingMonthsAtPayment } from "../../lib/loanMath"
+import DashboardImportExport from "../../components/dashboard/DashboardImportExport"
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 const DONUT_COLORS = ["#7c3aed", "#2563eb", "#0891b2", "#059669", "#f59e0b", "#ec4899"]
@@ -161,9 +162,12 @@ function Loans() {
             <p className="text-gray-500 text-sm">Track your loans and repayment progress</p>
           </div>
         </div>
-        <button className="w-9 h-9 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
-          <Bell size={16} />
-        </button>
+        <div className="flex items-center gap-2">
+          <DashboardImportExport transactions={[]} loans={loans} onImported={fetchLoans} />
+          <button className="w-9 h-9 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-gray-500">
+            <Bell size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
